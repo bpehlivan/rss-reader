@@ -1,3 +1,5 @@
+run-app:
+	uvicorn main:app --reload
 db:
 	docker-compose run --rm --service-ports -d database
 bash:
