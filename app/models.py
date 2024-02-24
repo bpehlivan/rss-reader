@@ -3,10 +3,28 @@ from datetime import datetime
 
 import validators
 from pydantic import field_validator
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import (
+    SQLModel,
+    Field,
+    Relationship,
+    create_engine,
+    UniqueConstraint,
+)
+
+from settings import settings
+
+engine = create_engine(
+    f"postgresql://{settings.postgres_user}:{settings.postgres_password}@"
+    f"{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
+)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
 
 
 class User(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("email"),)
     # It is Optional due to typing, Not optional inside DB
     id: Optional[int] = Field(default=None, primary_key=True)
     subscribed_feeds: List["FeedSubscription"] = Relationship(
@@ -18,7 +36,11 @@ class User(SQLModel, table=True):
 
 
 class Feed(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
     items: List["FeedItem"] = Relationship(back_populates="feed")
+    subscribed_users: List["FeedSubscription"] = Relationship(
+        back_populates="feed",
+    )
     feed_url: str
     feed_title: str
     feed_description: str
@@ -41,11 +63,11 @@ class FeedSubscription(SQLModel, table=True):
 
 class FeedItem(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    feed_subscription_id: int = Field(
+    feed_id: int = Field(
         default=None,
         foreign_key="feed.id",
     )
-    feed_subscription: "Feed" = Relationship(
+    feed: "Feed" = Relationship(
         back_populates="items",
     )
     is_read: bool = False
