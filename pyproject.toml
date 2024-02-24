@@ -10,6 +10,8 @@ python = "^3.12"
 fastapi = "^0.109.2"
 uvicorn = "^0.27.1"
 feedparser = "^6.0.11"
+sqlmodel = "^0.0.16"
+validators = "^0.22.0"
 
 
 [tool.poetry.group.dev.dependencies]
