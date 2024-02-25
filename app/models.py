@@ -7,6 +7,7 @@ from sqlmodel import (
     SQLModel,
     Field,
     Relationship,
+    Session,
     create_engine,
     UniqueConstraint,
 )
@@ -19,19 +20,25 @@ engine = create_engine(
 )
 
 
-def create_db_and_tables():
+def get_db_session():
+    with Session(engine) as session:
+        yield session
+
+
+def create_db_and_tables(engine=engine):
     SQLModel.metadata.create_all(engine)
 
 
 class User(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint("email"),)
+    __table_args__ = (UniqueConstraint("username"),)
     # It is Optional due to typing, Not optional inside DB
     id: Optional[int] = Field(default=None, primary_key=True)
     subscribed_feeds: List["FeedSubscription"] = Relationship(
         back_populates="user"
     )
+    is_active: bool = True
+    username: str
     password: str
-    email: str
     full_name: str
 
 

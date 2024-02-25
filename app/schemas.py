@@ -1,14 +1,19 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserIn(BaseModel):
-    email: EmailStr
+    username: str = Field(min_length=5, max_length=64)
     password: str = Field(min_length=8, max_length=64)
     full_name: str = Field(min_length=5, max_length=64)
 
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    email: str
+    username: str
     full_name: str
     id: int
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
