@@ -10,3 +10,5 @@ up:
 	docker-compose up
 build:
 	docker-compose build
+test:
+	docker-compose run --rm app pytest
