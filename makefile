@@ -12,3 +12,7 @@ build:
 	docker-compose build
 test:
 	docker-compose run --rm app pytest
+migrate:
+	alembic upgrade head
+migrations:
+	alembic revision --autogenerate

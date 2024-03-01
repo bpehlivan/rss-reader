@@ -80,3 +80,8 @@ def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     return UserOut.model_validate(current_user)
+
+
+@app.post("feed/subscribe")
+def subscribe_to_feed():
+    pass

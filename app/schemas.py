@@ -17,3 +17,7 @@ class UserOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class FeedIn(BaseModel):
+    feed_url: str

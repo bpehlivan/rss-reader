@@ -51,6 +51,7 @@ class Feed(SQLModel, table=True):
     feed_url: str
     feed_title: str
     feed_description: str
+    guid: str
 
     @field_validator("feed_url")
     @classmethod
