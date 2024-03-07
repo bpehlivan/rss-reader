@@ -1,6 +1,7 @@
-# This file contains tests for the main routes of the application
 from app.models import User
 from app.security import hash_password
+from app.utils import DictToObject
+from tests.test_data import sample_parser_response_success
 
 
 def test_register_user_success(client):
@@ -87,3 +88,31 @@ def test_read_users_me_not_authenticated(client):
     response = client.get("/users/me/")
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
+
+
+def test_subscribe_to_feed(client, session, valid_auth_header, mocker):
+    mocked_parser = mocker.patch(
+        "main.feedparser.parse",
+        return_value=DictToObject(sample_parser_response_success),
+    )
+
+    user = User(
+        username="testuser",
+        password="securepassword",
+        full_name="Test User",
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    test_url = "https://example.com/rss-feed"
+    response = client.post(
+        "/feed/subscribe",
+        headers=valid_auth_header,
+        json={"feed_url": test_url},
+    )
+    assert response.status_code == 201
+    assert response.json()["feed_url"] == test_url
+    assert user.subscribed_feeds[0].feed.feed_url == test_url
+
+    mocked_parser.assert_called_once_with(test_url)

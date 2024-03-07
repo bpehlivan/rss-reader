@@ -1,4 +1,5 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field, AnyUrl
 
 
 class UserIn(BaseModel):
@@ -20,4 +21,12 @@ class Token(BaseModel):
 
 
 class FeedIn(BaseModel):
+    feed_url: AnyUrl
+
+
+class FeedOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    feed_description: Optional[str] = None
     feed_url: str
+    feed_title: str
+    id: int

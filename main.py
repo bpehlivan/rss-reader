@@ -1,10 +1,19 @@
 from typing import Annotated
+
+import feedparser
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
-from app.models import User, create_db_and_tables, get_db_session
-from app.schemas import Token, UserIn, UserOut
+from app.models import (
+    Feed,
+    FeedSubscription,
+    User,
+    create_db_and_tables,
+    get_db_session,
+)
+from app.model_helpers import get_or_create_feed
+from app.schemas import FeedIn, FeedOut, Token, UserIn, UserOut
 from app.security import (
     authenticate_user,
     create_access_token,
@@ -82,6 +91,28 @@ def read_users_me(
     return UserOut.model_validate(current_user)
 
 
-@app.post("feed/subscribe")
-def subscribe_to_feed():
-    pass
+@app.post("/feed/subscribe", response_model=FeedOut, status_code=201)
+def subscribe_to_feed(
+    feed_in: FeedIn,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db_session: Session = Depends(get_db_session),
+) -> FeedOut:
+    parser = feedparser.parse(str(feed_in.feed_url))
+
+    if parser.bozo:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Something is wrong with the feed",
+        )
+
+    feed: Feed = get_or_create_feed(parser, feed_in, db_session)
+
+    subscription = FeedSubscription(
+        user_id=current_user.id,
+        feed_id=feed.id,
+    )
+    db_session.add(subscription)
+    db_session.commit()
+    db_session.refresh(subscription)
+
+    return FeedOut.model_validate(feed)

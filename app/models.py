@@ -43,15 +43,14 @@ class User(SQLModel, table=True):
 
 
 class Feed(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("feed_url"),)
     id: Optional[int] = Field(default=None, primary_key=True)
-    items: List["FeedItem"] = Relationship(back_populates="feed")
-    subscribed_users: List["FeedSubscription"] = Relationship(
+    user_subscriptions: List["FeedSubscription"] = Relationship(
         back_populates="feed",
     )
+    feed_description: Optional[str] = None
     feed_url: str
     feed_title: str
-    feed_description: str
-    guid: str
 
     @field_validator("feed_url")
     @classmethod
@@ -63,19 +62,24 @@ class Feed(SQLModel, table=True):
 
 class FeedSubscription(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+
     user: User = Relationship(back_populates="subscribed_feeds")
     user_id: int = Field(default=None, foreign_key="user.id")
-    feed: "Feed" = Relationship(back_populates="subscribed_users")
+
+    feed: "Feed" = Relationship(back_populates="user_subscriptions")
     feed_id: int = Field(default=None, foreign_key="feed.id")
 
+    items: List["FeedSubscriptionItem"] = Relationship(
+        back_populates="feed_subscription")
 
-class FeedItem(SQLModel, table=True):
+
+class FeedSubscriptionItem(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    feed_id: int = Field(
+    feed_subscription_id: int = Field(
         default=None,
-        foreign_key="feed.id",
+        foreign_key="feedsubscription.id",
     )
-    feed: "Feed" = Relationship(
+    feed_subscription: "FeedSubscription" = Relationship(
         back_populates="items",
     )
     is_read: bool = False
