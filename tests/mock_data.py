@@ -1,3 +1,41 @@
+sample_parser_response_fail = {
+    "bozo": 1,
+    "entries": [],
+    "feed": {
+        "html": {"lang": "en"},
+        "meta": {"name": "viewport", "content": ""},
+        "style": {"nonce": "UT2y_g5WN0yXQ3k7gN0rxg"},
+        "main": {"id": "af-error-container", "role": "main"},
+        "a": {"href": "//www.google.com"},
+        "span": {"id": "logo", "aria-label": "Google", "role": "img"}
+    },
+    "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+        "pragma": "no-cache",
+        "expires": "Mon, 01 Jan 1990 00:00:00 GMT",
+        "date": "Sun, 10 Mar 2024 13:15:13 GMT",
+        "content-security-policy": "",
+        "accept-ch": "",
+        "cross-origin-opener-policy": "same-origin",
+        "permissions-policy": "",
+        "content-encoding": "gzip",
+        "server": "ESF",
+        "x-xss-protection": "0",
+        "x-content-type-options": "nosniff",
+        "alt-svc": 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+        "connection": "close",
+        "transfer-encoding": "chunked"
+    },
+    "href": "https://feeds.feedburner.com/sdkfsd",
+    "status": 404,
+    "encoding": "utf-8",
+    "bozo_exception": "",
+    "version": "",
+    "namespaces": {}
+}
+
+
 sample_parser_response_success = {
   "bozo": False,
   "entries": [

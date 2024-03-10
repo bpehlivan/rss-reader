@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     postgres_password: str
     postgres_host: str
     postgres_port: int
+    redis_url: str = "redis://localhost:6379/0"
     postgres_test_db: str = "test"
 
     secret: str = "secret"
