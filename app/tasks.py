@@ -9,8 +9,8 @@ from app.models import Feed, FeedSubscription, User, engine
 
 celery_app = Celery(
     __name__,
-    broker=settings.redis_url,
-    backend=settings.redis_url,
+    broker=settings.redis_host,
+    backend=settings.redis_host,
     include=["app.tasks"],
 )
 

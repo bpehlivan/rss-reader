@@ -33,7 +33,6 @@ from app.security import (
     get_current_active_user,
     hash_password,
 )
-from app.tasks import update_subscription_task
 
 
 def lifespan(app: FastAPI):
@@ -76,7 +75,7 @@ def register_user(
     return UserOut.model_validate(user)
 
 
-@app.post("/login")
+@app.post("/token")
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db_session: Session = Depends(get_db_session),

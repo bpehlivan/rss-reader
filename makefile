@@ -1,5 +1,5 @@
-run-app:
-	uvicorn main:app --reload
+run:
+	docker-compose run --rm app uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 db:
 	docker-compose run --rm --service-ports -d database
 cache:
