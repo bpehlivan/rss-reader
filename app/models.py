@@ -38,9 +38,7 @@ class User(SQLModel, table=True):
     subscribed_feeds: List["FeedSubscription"] = Relationship(
         back_populates="user"
     )
-    feed_entries: List["UserFeedEntry"] = Relationship(
-        back_populates="user"
-    )
+
     is_active: bool = True
     username: str
     password: str
@@ -58,6 +56,7 @@ class Feed(SQLModel, table=True):
     )
 
     feed_description: Optional[str] = None
+    is_active: bool = True
     feed_url: str
     feed_title: str
 
@@ -93,6 +92,10 @@ class FeedSubscription(SQLModel, table=True):
     feed: "Feed" = Relationship(back_populates="feed_subscriptions")
     feed_id: int = Field(default=None, foreign_key="feed.id")
 
+    user_feed_entries: List["UserFeedEntry"] = Relationship(
+        back_populates="subscription",
+    )
+
     # see:
     # https://github.com/tiangolo/sqlmodel/issues/370#issuecomment-1169674418
     created_at: Optional[datetime] = Field(
@@ -106,11 +109,23 @@ class FeedSubscription(SQLModel, table=True):
 class UserFeedEntry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    user: User = Relationship(back_populates="feed_entries")
-    user_id: int = Field(default=None, foreign_key="user.id")
+    subscription: FeedSubscription = Relationship(
+        back_populates="user_feed_entries",
+    )
+    subscription_id: int = Field(
+        default=None,
+        foreign_key="feedsubscription.id",
+    )
 
     feed_entry: FeedEntry = Relationship(back_populates=None)
     feed_entry_id: int = Field(default=None, foreign_key="feedentry.id")
+
+    created_at: Optional[datetime] = Field(
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
+    updated_at: Optional[datetime] = Field(
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now())
+    )
 
     is_read: bool = False
     is_favorite: bool = False

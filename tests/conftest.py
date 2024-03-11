@@ -1,15 +1,21 @@
-# conftest.py
 from typing import Generator
+
+import feedparser
 import pytest
 from sqlalchemy import Engine
 from sqlmodel import SQLModel, Session, create_engine
 from fastapi.testclient import TestClient
-from app.models import Feed, User, create_db_and_tables
+from app.model_helpers import (
+    update_entries_for_feed,
+    update_subscription_entries,
+)
+from app.models import Feed, FeedSubscription, User, create_db_and_tables
 from app.security import create_access_token
 
 from main import app
 from app.models import get_db_session
 from settings import settings
+from tests.mock_data import sample_parser_raw_data
 
 
 @pytest.fixture(scope="session")
@@ -77,3 +83,24 @@ def test_feed(session: Session) -> Generator[Feed, None, None]:
     session.commit()
     session.refresh(feed)
     yield feed
+
+
+@pytest.fixture(scope="function")
+def set_up_feed(session: Session, test_feed, test_user, mocker):
+    parsed_object = feedparser.parse(sample_parser_raw_data)
+
+    mocker.patch(
+        "app.model_helpers.feedparser.parse",
+        return_value=parsed_object,
+    )
+    update_entries_for_feed(test_feed, session)
+    subscription = FeedSubscription(
+        user_id=test_user.id,
+        feed_id=test_feed.id,
+    )
+    session.add(subscription)
+    session.commit()
+    session.refresh(subscription)
+
+    update_subscription_entries(subscription, session)
+    yield test_feed, test_user, subscription

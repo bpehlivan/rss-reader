@@ -1,11 +1,15 @@
+from datetime import datetime
+from time import mktime
 from fastapi import Depends, HTTPException, status
 from sqlmodel import Session, select
 import feedparser
 
 from app.models import (
     Feed,
+    FeedEntry,
     FeedSubscription,
     User,
+    UserFeedEntry,
     get_db_session,
 )
 from app.schemas import FeedIn
@@ -48,7 +52,7 @@ def create_feed_in_database(
 def create_feed_subscription_with_feed_id(
     feed_id: int,
     user: User,
-    db_session: Session,
+    db_session: Session = Depends(get_db_session),
 ) -> FeedSubscription:
     statement = select(Feed).where(Feed.id == feed_id)
     results = db_session.exec(statement)
@@ -58,6 +62,19 @@ def create_feed_subscription_with_feed_id(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Feed not found.",
+        )
+
+    statement = select(FeedSubscription).where(
+        FeedSubscription.user_id == user.id,
+        FeedSubscription.feed_id == feed.id,
+    )
+    results = db_session.exec(statement)
+    existing_subscription = results.first()
+
+    if existing_subscription:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Subscription already exists.",
         )
 
     subscription = FeedSubscription(
@@ -71,42 +88,96 @@ def create_feed_subscription_with_feed_id(
     return subscription
 
 
-"""
-async def update_feed_for_subscription(
-    feed_subscription: FeedSubscription,
-    db_session: Session = Depends(get_db_session),
-):
-    parser = feedparser.parse(feed_subscription.feed.feed_url)
-    for entry in parser.entries:
-        statement = select(FeedSubscriptionItem).where(
-            FeedSubscriptionItem.guid == entry.guid
-        )
-        results = db_session.exec(statement)
-        existing_item = results.first()
-        if existing_item:
-            continue
-
-        feed_subscription_item = FeedSubscriptionItem(
-            feed_subscription=feed_subscription,
-            description=entry.description,
-            summary=entry.summary,
-            author=entry.author,
-            title=entry.title,
-            link=entry.link,
-            guid=entry.guid,
-            publish_date=entry.published_parsed,
-        )
-        db_session.add(feed_subscription_item)
-    db_session.commit()
-
-
-async def update_feed_for_user(
+def unscubscribe_from_feed(
+    feed_id: int,
     user: User,
     db_session: Session = Depends(get_db_session),
 ):
-    tasks = [
-        update_feed_for_subscription(feed_subscription, db_session)
-        for feed_subscription in user.subscribed_feeds
-    ]
-    await asyncio.gather(*tasks)
-"""
+    statement = select(FeedSubscription).where(
+        FeedSubscription.user_id == user.id,
+        FeedSubscription.feed_id == feed_id,
+    )
+    results = db_session.exec(statement)
+    subscription = results.first()
+
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Subscription not found.",
+        )
+
+    db_session.delete(subscription)
+    db_session.commit()
+
+
+def update_entries_for_feed(
+    feed: Feed,
+    db_session: Session = Depends(get_db_session),
+):
+    parser = feedparser.parse(feed.feed_url)
+
+    if parser.bozo:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Something is wrong with the feed",
+        )
+
+    for entry in parser.entries:
+        statement = select(FeedEntry).where(
+            FeedEntry.guid == entry.id,
+        )
+        results = db_session.exec(statement)
+        existing_entry = results.first()
+
+        if existing_entry:
+            continue
+
+        feed_entry = FeedEntry(
+            feed_id=feed.id,
+            title=entry.title,
+            link=entry.link,
+            description=entry.description,
+            guid=entry.id,
+            summary=entry.summary,
+            publish_date=datetime.fromtimestamp(
+                mktime(entry.published_parsed)
+            ),
+        )
+        db_session.add(feed_entry)
+    db_session.commit()
+
+
+def update_subscription_entries(
+    subscription: FeedSubscription,
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    This function updates the entries for a specific subscription.
+    """
+
+    feed = subscription.feed
+
+    select_entries_statement = select(FeedEntry).where(
+        FeedEntry.feed_id == feed.id,
+    )
+    results = db_session.exec(select_entries_statement)
+    entries = results.all()
+
+    for entry in entries:
+        user_feed_entry_statement = select(UserFeedEntry).where(
+            UserFeedEntry.subscription_id == subscription.id,
+            UserFeedEntry.feed_entry_id == entry.id,
+        )
+        results = db_session.exec(user_feed_entry_statement)
+        user_feed_entry = results.first()
+
+        if user_feed_entry:
+            continue
+
+        user_feed_entry = UserFeedEntry(
+            subscription_id=subscription.id,
+            feed_entry_id=entry.id,
+            is_read=False,
+        )
+        db_session.add(user_feed_entry)
+        db_session.commit()

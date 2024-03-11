@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, AnyUrl
 
@@ -29,4 +30,16 @@ class FeedOut(BaseModel):
     feed_description: Optional[str] = None
     feed_url: str
     feed_title: str
+    id: int
+
+
+class UserFeedEntryOut(BaseModel):
+    """Merged version of both UserFeedEntry and FeedEntry models"""
+    model_config = ConfigDict(from_attributes=True)
+    description: Optional[str] = None
+    summary: Optional[str] = None
+    publish_date: Optional[datetime] = None
+    is_read: bool = False
+    feed_id: int
+    title: str
     id: int
